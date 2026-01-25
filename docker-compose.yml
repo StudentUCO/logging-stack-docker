@@ -1,0 +1,148 @@
+version: '3.8'
+
+services:
+  # Loki - Log Storage and Query Engine
+  # Lightweight, label-based log aggregation
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    hostname: loki
+    
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    
+    command: -config.file=/etc/loki/local-config.yaml
+    
+    environment:
+      - LOKI_PORT=${LOKI_PORT:-3100}
+      - LOKI_RETENTION_DAYS=${LOKI_RETENTION_DAYS:-90}
+    
+    networks:
+      - logging-net
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    restart: unless-stopped
+    
+    labels:
+      - "com.example.description=Loki log aggregation engine"
+      - "com.example.version=2.9.8"
+
+  # Grafana - Visualization and Dashboard Platform
+  # Professional UI for log visualization and alerting
+  grafana:
+    image: grafana/grafana:10.2.1
+    container_name: grafana
+    hostname: grafana
+    
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-ChangeMe123!}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_HTTPONLY=true
+      - GF_SECURITY_COOKIE_SAMESITE=Strict
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+      - GF_INSTALL_PLUGINS=
+      - GF_SECURITY_DISABLE_BRUTE_FORCE_LOGIN_PROTECTION=false
+    
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    
+    networks:
+      - logging-net
+    
+    depends_on:
+      loki:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    restart: unless-stopped
+    
+    labels:
+      - "com.example.description=Grafana visualization platform"
+      - "com.example.version=10.2.1"
+
+  # Promtail - Log Collection Agent (Optional)
+  # For collecting logs from files and systemd
+  # Can be scaled to multiple instances for distributed collection
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: promtail
+    hostname: promtail
+    
+    ports:
+      - "${PROMTAIL_PORT:-9080}:9080"
+    - "${PROMTAIL_SYSLOG_PORT:-1514}:1514"
+    
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+    command: -config.file=/etc/promtail/config.yml
+    
+    networks:
+      - logging-net
+    
+    depends_on:
+      loki:
+        condition: service_healthy
+    
+    restart: unless-stopped
+    
+    labels:
+      - "com.example.description=Promtail log collection agent"
+      - "com.example.version=2.9.8"
+    
+    profiles:
+      - "promtail-optional"
+
+volumes:
+  loki-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${LOKI_DATA_PATH:-./volumes/loki-data}
+  
+  grafana-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${GRAFANA_DATA_PATH:-./volumes/grafana-data}
+
+networks:
+  logging-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: logging-net
+    ipam:
+      config:
+        - subnet: ${LOGGING_NETWORK_SUBNET:-172.25.0.0/16}
+
+labels:
+  - "com.example.project=logging-stack-docker"
+  - "com.example.environment=production"
