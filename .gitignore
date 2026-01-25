@@ -1,0 +1,78 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Local volumes and data
+volumes/
+loki-data/
+grafana-data/
+/data/
+/volumes/
+*.db
+*.db-shm
+*.db-wal
+
+# Docker
+.docker/
+Docker.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Backups
+*.backup
+*.bak
+backups/
+
+# Certificates (if using self-signed)
+certs/
+*.crt
+*.key
+*.pem
+!certs/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor backup files
+*~
+*.swp
+*.swo
+
+# Dependencies (if applicable)
+node_modules/
+venv/
+.venv/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Test coverage
+.coverage
+htmlcov/
+
+# Monitoring and metrics exports
+.prometheus_scrape_configs
+metrics/
