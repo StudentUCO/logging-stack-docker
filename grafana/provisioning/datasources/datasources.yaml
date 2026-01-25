@@ -1,0 +1,31 @@
+# Grafana Datasource Provisioning
+# Automatically configures Loki as a datasource
+
+apiVersion: 1
+
+providers:
+  - name: 'provisioned-datasources'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/datasources
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    orgId: 1
+    url: http://loki:3100
+    password: ''
+    user: ''
+    database: ''
+    basicAuth: false
+    isDefault: true
+    jsonData:
+      tlsSkipVerify: true
+      maxLines: 1000
+    readOnly: false
+    editable: true
