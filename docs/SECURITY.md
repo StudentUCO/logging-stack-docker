@@ -60,21 +60,21 @@ Use specific versions to ensure security updates:
 ```yaml
 services:
   loki:
-    image: grafana/loki:2.9.8  # ✓ Specific version
+    image: grafana/loki:3.3.2  # ✓ Specific version
     # NOT: image: grafana/loki:latest  # ✗ Latest can change
   
   grafana:
-    image: grafana/grafana:10.2.1  # ✓ Specific version
+    image: grafana/grafana:11.4.0  # ✓ Specific version
 ```
 
 ### 3. Verify Image Integrity
 
 ```bash
 # Pull and verify images
-docker pull grafana/loki:2.9.8
+docker pull grafana/loki:3.3.2
 
 # Check SHA256
-docker inspect grafana/loki:2.9.8 | grep Digest
+docker inspect grafana/loki:3.3.2 | grep Digest
 
 # Compare with official repository
 # https://hub.docker.com/r/grafana/loki/tags
