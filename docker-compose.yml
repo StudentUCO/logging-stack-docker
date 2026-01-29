@@ -7,9 +7,12 @@ services:
     image: grafana/loki:2.9.8
     container_name: loki
     hostname: loki
+    user: "10001:10001" # Run as non-root (security hardening)
     
     ports:
-      - "${LOKI_PORT:-3100}:3100"
+      # Bind to localhost only to prevent external access without auth
+      # Access should be proxied via Nginx
+      - "127.0.0.1:${LOKI_PORT:-3100}:3100"
     
     volumes:
       - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
@@ -20,6 +23,14 @@ services:
     environment:
       - LOKI_PORT=${LOKI_PORT:-3100}
       - LOKI_RETENTION_DAYS=${LOKI_RETENTION_DAYS:-90}
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 256M
     
     networks:
       - logging-net
@@ -43,9 +54,12 @@ services:
     image: grafana/grafana:10.2.1
     container_name: grafana
     hostname: grafana
+    user: "472:472" # Grafana user
     
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      # Bind to localhost to force Nginx usage in production
+      # Remove "127.0.0.1:" if you need direct access during dev
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
@@ -63,6 +77,14 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          memory: 128M
+
     networks:
       - logging-net
     
@@ -92,8 +114,8 @@ services:
     hostname: promtail
     
     ports:
-      - "${PROMTAIL_PORT:-9080}:9080"
-    - "${PROMTAIL_SYSLOG_PORT:-1514}:1514"
+      - "127.0.0.1:${PROMTAIL_PORT:-9080}:9080"
+      - "127.0.0.1:${PROMTAIL_SYSLOG_PORT:-1514}:1514"
     
     volumes:
       - ./promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
@@ -103,6 +125,14 @@ services:
     
     command: -config.file=/etc/promtail/config.yml
     
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          memory: 64M
+
     networks:
       - logging-net
     
