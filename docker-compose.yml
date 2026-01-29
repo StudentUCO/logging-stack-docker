@@ -4,7 +4,7 @@ services:
   # Loki - Log Storage and Query Engine
   # Lightweight, label-based log aggregation
   loki:
-    image: grafana/loki:2.9.8
+    image: grafana/loki:3.3.2 # Updated to 3.x series (Jan 2026 recommended)
     container_name: loki
     hostname: loki
     user: "10001:10001" # Run as non-root (security hardening)
@@ -46,12 +46,12 @@ services:
     
     labels:
       - "com.example.description=Loki log aggregation engine"
-      - "com.example.version=2.9.8"
+      - "com.example.version=3.3.2"
 
   # Grafana - Visualization and Dashboard Platform
   # Professional UI for log visualization and alerting
   grafana:
-    image: grafana/grafana:10.2.1
+    image: grafana/grafana:11.4.0 # Updated to 11.x series (Jan 2026 recommended)
     container_name: grafana
     hostname: grafana
     user: "472:472" # Grafana user
@@ -103,13 +103,14 @@ services:
     
     labels:
       - "com.example.description=Grafana visualization platform"
-      - "com.example.version=10.2.1"
+      - "com.example.version=11.4.0"
 
   # Promtail - Log Collection Agent (Optional)
   # For collecting logs from files and systemd
   # Can be scaled to multiple instances for distributed collection
+  # NOTE: Promtail is in LTS mode until 2026. Consider migrating to Grafana Alloy for future deployments.
   promtail:
-    image: grafana/promtail:2.9.8
+    image: grafana/promtail:3.3.2 # Updated to match Loki version
     container_name: promtail
     hostname: promtail
     
@@ -144,7 +145,7 @@ services:
     
     labels:
       - "com.example.description=Promtail log collection agent"
-      - "com.example.version=2.9.8"
+      - "com.example.version=3.3.2"
     
     profiles:
       - "promtail-optional"
