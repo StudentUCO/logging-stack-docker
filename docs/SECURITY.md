@@ -13,6 +13,10 @@ The logging stack handles sensitive institutional data. This guide ensures:
 - ✅ Audit logging
 - ✅ Backup security
 
+## Important Updates (2026)
+
+> ⚠️ **CRITICAL CHANGE**: Ports for Loki (`3100`) and Promtail (`9080`) are now bound to `127.0.0.1` (localhost) by default in `docker-compose.yml`. You MUST use a reverse proxy (like Nginx) or an SSH tunnel to access them from outside the server.
+
 ## Table of Contents
 
 1. [Pre-Deployment Security](#pre-deployment-security)
@@ -158,18 +162,18 @@ environment:
 Loki doesn't have built-in auth. Secure with reverse proxy:
 
 ```yaml
-# Docker Compose: Don't expose Loki directly
+# Docker Compose: Ports are bound to 127.0.0.1 by default
 ports:
-  - "3100:3100"  # ✗ NOT recommended
+  - "127.0.0.1:3100:3100"  # ✓ Secure default
 
-# Better: Route through Nginx with auth
+# Route through Nginx with auth
 ```
 
 **Nginx reverse proxy example**:
 
 ```nginx
 upstream loki {
-  server loki:3100;
+  server 127.0.0.1:3100; # Connect to localhost
 }
 
 server {
@@ -263,9 +267,14 @@ networks:
 
 ```bash
 # Allow only necessary ports
-sudo ufw allow from 10.0.0.0/8 to any port 3000/tcp  # Grafana
-sudo ufw allow from 10.0.0.0/8 to any port 3100/tcp  # Loki
-sudo ufw allow from 10.0.0.0/8 to any port 9080/tcp  # Promtail
+sudo ufw allow ssh                   # Port 22
+sudo ufw allow http                  # Port 80
+sudo ufw allow https                 # Port 443
+
+# Deny direct access to internal ports (redundant if bound to 127.0.0.1 but good practice)
+sudo ufw deny 3000
+sudo ufw deny 3100
+sudo ufw deny 9080
 
 # Deny all others
 sudo ufw default deny incoming
