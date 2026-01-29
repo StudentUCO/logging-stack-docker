@@ -105,14 +105,24 @@ chunk_store_config:
   # Maximum parallelism for queries
   max_look_back_period: 0s
   
-  # Retention configuration
-  retention_enabled: true
+  # Retention configuration (managed by compactor)
+  retention_enabled: false # Disabled here, enabled in compactor
   
   # Write-ahead log
   write_dedupe_cache_config:
     cache:
       enable_fifocache: true
       default_validity: 24h
+
+# Compactor configuration - manages retention and compaction
+# Replaces table_manager for boltdb-shipper
+compactor:
+  working_directory: /loki/boltdb-shipper-compactor
+  shared_store: filesystem
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 150
+  compaction_interval: 10m
 
 # Querier configuration - log query settings
 querier:
@@ -148,18 +158,6 @@ query_range:
     cache:
       enable_fifocache: true
       default_validity: 1m
-
-# Table manager - manages retention
-table_manager:
-  # Retention enabled
-  retention_deletes_enabled: true
-  retention_period: 2160h  # 90 days (must match limits_config.retention_period)
-  
-  # Poll interval
-  poll_interval: 10m
-  
-  # Flush on shutdown
-  creation_grace_period: 10m
 
 # Runtime configuration - enables dynamic configuration reloading
 runtime_config:
