@@ -7,7 +7,7 @@ services:
     image: grafana/loki:3.3.2 # Updated to 3.x series (Jan 2026 recommended)
     container_name: loki
     hostname: loki
-    user: "10001:10001" # Run as non-root (security hardening)
+    user: "0:0" # Run as root to fix permissions on local bind-mounted volumes
     
     ports:
       # Bind to localhost only to prevent external access without auth
@@ -68,7 +68,7 @@ services:
       - GF_SECURITY_COOKIE_SECURE=true
       - GF_SECURITY_COOKIE_HTTPONLY=true
       - GF_SECURITY_COOKIE_SAMESITE=Strict
-      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-http://localhost:3000}
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL:-https://logs.unyai.duckdns.org}
       - GF_INSTALL_PLUGINS=
       - GF_SECURITY_DISABLE_BRUTE_FORCE_LOGIN_PROTECTION=false
     
