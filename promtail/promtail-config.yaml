@@ -47,9 +47,10 @@ scrape_configs:
           source: timestamp
           format: "2006-01-02T15:04:05.000000000Z07:00"
       - labels:
-          output:
           stream:
           level:
+      - output:
+          source: output
 
   # System logs from /var/log
   - job_name: syslog
@@ -106,7 +107,7 @@ scrape_configs:
           service: nginx
     pipeline_stages:
       - regex:
-          expression: '^(?P<remote>[^ ]*) (?P<host>[^ ]*) (?P<user>[^ ]*) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+(?:\s+(?:(?:[^"]*)?)))" (?P<status>[^ ]*) (?P<size>[^ ]*)(?: "(?P<referer>[^\"]*)" "(?P<agent>[^\"]*)")?$'
+          expression: '^(?P<remote>[^ ]*) (?P<host>[^ ]*) (?P<user>[^ ]*) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+(?:\s+(?:(?:[^"]*)?)))" (?P<status>[^ ]*) (?P<size>[^ ]*)(?: "(?P<referer>[^"]*)" "(?P<agent>[^"]*)")?$'
       - timestamp:
           source: timestamp
           format: "02/Jan/2006:15:04:05 -0700"
