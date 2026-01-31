@@ -1,56 +1,28 @@
-# Loki Configuration
-# Optimized for university-scale deployments (100k-500k logs/day)
-# Reference: https://grafana.com/docs/loki/latest/configuration/
-
 auth_enabled: false
 
-# Ingester configuration - handles log writing
-ingester:
-  # Period during which chunks are not flushed
-  chunk_idle_period: 3m
-  
-  # Maximum age of chunks before they are flushed
-  max_chunk_age: 6h
-  
-  # Period to retain chunks after they have been flushed
-  chunk_retain_period: 1m
-  
-  # Enabled by default, speeds up chunk compression
-  max_chunk_streams: 10000
-  
-  # Rate limiter configuration
-  rate_limit_enabled: true
-  rate_limit_max_streams_matchers: 100
-  rate_limit_max_bytes_per_second: 10000000  # 10 MB/s
-  rate_limit_max_entries_limit_per_second: 100000
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
 
-# Limits configuration - resource management
-limits_config:
-  # Enforce metric names have unique labels
-  enforce_metric_name: false
-  
-  # Reject old samples
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h  # 7 days
-  
-  # Ingestion rate limiting
-  ingestion_rate_mb: 50  # Max 50 MB/s ingestion
-  ingestion_burst_size_mb: 100  # Allow bursts up to 100 MB
-  
-  # Maximum retention period
-  retention_period: 2160h  # 90 days
-  
-  # Maximum cache freshness
-  max_cache_freshness_period: 5m
-  
-  # Limit log lines
-  max_line_size: 256000  # 256 KB per line
-  
-  # Query-related limits
-  max_entries_limit_per_second: 100000
-  max_global_streams_per_user: 100000
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
 
-# Schema configuration - storage backend
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
 schema_config:
   configs:
     - from: 2020-10-24
@@ -59,132 +31,10 @@ schema_config:
       schema: v11
       index:
         prefix: index_
-        period: 24h  # One index per day
+        period: 24h
 
-# Server configuration - HTTP API
-server:
-  http_listen_port: 3100
-  log_level: info
-  
-  # Graceful shutdown period
-  graceful_shutdown_timeout: 30s
-  
-  # HTTP server settings
-  http_server_read_timeout: 600s
-  http_server_write_timeout: 600s
-  http_server_idle_timeout: 600s
-  
-  # Enable GZIP compression for responses
-  gzip_level: 3
+ruler:
+  alertmanager_url: http://localhost:9093
 
-# Storage configuration - where logs are stored
-storage_config:
-  # BoltDB Shipper - recommended for small to medium deployments
-  boltdb_shipper:
-    active_index_directory: /loki/boltdb-shipper-active
-    shared_store: filesystem
-    cache_location: /loki/boltdb-shipper-cache
-    resync_interval: 5s
-  
-  # Filesystem object store - for log chunks
-  filesystem:
-    directory: /loki/chunks
-  
-  # Index cache configuration
-  index_cache_validity: 5m
-  cache_config:
-    enable_fifocache: true
-    cache:
-      default_validity: 1h
-      background:
-        writeback_goroutines: 10
-        writeback_delay: 5s
-
-# Chunk configuration - how logs are stored
-chunk_store_config:
-  # Maximum parallelism for queries
-  max_look_back_period: 0s
-  
-  # Retention configuration (managed by compactor)
-  retention_enabled: false # Disabled here, enabled in compactor
-  
-  # Write-ahead log
-  write_dedupe_cache_config:
-    cache:
-      enable_fifocache: true
-      default_validity: 24h
-
-# Compactor configuration - manages retention and compaction
-# Replaces table_manager for boltdb-shipper
-compactor:
-  working_directory: /loki/boltdb-shipper-compactor
-  shared_store: filesystem
-  retention_enabled: true
-  retention_delete_delay: 2h
-  retention_delete_worker_count: 150
-  compaction_interval: 10m
-
-# Querier configuration - log query settings
-querier:
-  # Maximum concurrent requests
-  max_concurrent: 20
-  
-  # Engine timeout
-  engine:
-    timeout: 30s
-  
-  # Metric query limits
-  metric_names_cache_refresh_period: 1m
-  
-  # Cache config for query results
-  cache_results: true
-  results_cache_ttl: 5m
-
-# Query range configuration - for metric queries
-query_range:
-  # Alignment period for metric queries
-  align_queries_with_step: true
-  
-  # Internal lookback period
-  max_cache_freshness_period: 10m
-  
-  # Default step for metric queries
-  metric_instant_split: 1h
-  
-  # Cache config
-  cache_results: true
-  results_cache_ttl: 1m
-  results_cache:
-    cache:
-      enable_fifocache: true
-      default_validity: 1m
-
-# Runtime configuration - enables dynamic configuration reloading
-runtime_config:
-  # File to load runtime config from
-  file: /etc/loki/runtime.yaml
-  
-  # Period to check for updates
-  period: 10s
-
-# Tracing configuration (optional)
-tracing:
-  enabled: false
-
-# Member list configuration - for clustering (not used in single-node)
-memberlist:
-  # Cluster members
-  node_name: loki-node-1
-  
-  # Bind port
-  bind_port: 7946
-  
-  # Retry attempts
-  retransmit_factor: 4
-  
-  # Awareness settings
-  awareness_metric_enabled: true
-
-# Analytics configuration - helps Grafana improve Loki
 analytics:
   reporting_enabled: false
