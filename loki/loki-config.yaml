@@ -159,14 +159,6 @@ query_range:
       enable_fifocache: true
       default_validity: 1m
 
-# Runtime configuration - enables dynamic configuration reloading
-runtime_config:
-  # File to load runtime config from
-  file: /etc/loki/runtime.yaml
-  
-  # Period to check for updates
-  period: 10s
-
 # Tracing configuration (optional)
 tracing:
   enabled: false
