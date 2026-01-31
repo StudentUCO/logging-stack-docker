@@ -1,142 +1,44 @@
-# Promtail Configuration
-# Collects logs from various sources and sends them to Loki
-# Reference: https://grafana.com/docs/loki/latest/clients/promtail/configuration/
-
 server:
   http_listen_port: 9080
   grpc_listen_port: 0
-  log_level: info
-  log_format: json
-  disable_request_limit: false
 
 positions:
   filename: /tmp/positions.yaml
-  sync_period: 10s
-  ignore_invalid_yaml: true
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
-    batch_size: 1024
-    batch_timeout: 1s
-    tcp_client_config:
-      tls_enabled: false
 
 scrape_configs:
   # Docker containers via log driver
   - job_name: docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
-        refresh_interval: 15s
+        refresh_interval: 5s
     relabel_configs:
       - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
         target_label: 'container'
-      - source_labels: ['__meta_docker_container_image_name']
-        target_label: 'image'
       - source_labels: ['__meta_docker_container_id']
         target_label: 'container_id'
       - source_labels: ['__meta_docker_container_label_service']
         target_label: 'service'
-    pipeline_stages:
-      - json:
-          expressions:
-            output: log
-            stream: stream
-            timestamp: time
-            level: level
-      - timestamp:
-          source: timestamp
-          format: "2006-01-02T15:04:05.000000000Z07:00"
-      - labels:
-          stream:
-          level:
-      - output:
-          source: output
 
-  # System logs from /var/log
-  - job_name: syslog
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: syslog
-          __path__: /var/log/syslog
-          service: system
-    pipeline_stages:
-      - regex:
-          expression: '^(?P<timestamp>.*?) (?P<hostname>.*?) (?P<application>[^ \[]*)(\[(?P<pid>[0-9]*)\])?: (?P<message>.*)$'
-      - timestamp:
-          source: timestamp
-          format: "Jan  2 15:04:05"
-          location: Local
-      - labels:
-          hostname:
-          application:
-          pid:
-
-  # Application logs
-  - job_name: application_logs
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: application
-          __path__: /var/log/applications/*.log
-          service: application
-    pipeline_stages:
-      - json:
-          expressions:
-            level: level
-            message: message
-            timestamp: timestamp
-      - timestamp:
-          source: timestamp
-          format: "2006-01-02T15:04:05.000000000Z07:00"
-          fallback_formats:
-            - "2006-01-02 15:04:05"
-      - labels:
-          level:
-
-  # Nginx access logs
-  - job_name: nginx
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: nginx
-          __path__: /var/log/nginx/access.log
-          service: nginx
-    pipeline_stages:
-      - regex:
-          expression: '^(?P<remote>[^ ]*) (?P<host>[^ ]*) (?P<user>[^ ]*) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+(?:\s+(?:(?:[^"]*)?)))" (?P<status>[^ ]*) (?P<size>[^ ]*)(?: "(?P<referer>[^"]*)" "(?P<agent>[^"]*)")?$'
-      - timestamp:
-          source: timestamp
-          format: "02/Jan/2006:15:04:05 -0700"
-      - labels:
-          remote:
-          host:
-          status:
-          method:
-
-  # Syslog input (UDP/TCP)
+  # Syslog input (UDP/TCP) - Syntax corrected for v2
   - job_name: syslog_ingest
-    syslog_config:
+    syslog:
       listen_address: 0.0.0.0:1514
       listen_protocol: tcp
-      label_structured_data: true
       labels:
         job: syslog
-        service: syslog_input
-    pipeline_stages:
-      - timestamp:
-          source: timestamp
-          format: "Jan  2 15:04:05"
-          fallback_formats:
-            - "2006-01-02 15:04:05"
-      - labels:
-          severity:
-          hostname:
-          app_name:
+    relabel_configs:
+      - source_labels: ['__syslog_connection_hostname']
+        target_label: 'hostname'
 
-# Tracing configuration (optional)
-tracing:
-  enabled: false
+  # Local System Logs
+  - job_name: system
+    static_configs:
+    - targets:
+        - localhost
+      labels:
+        job: varlogs
+        __path__: /var/log/*.log
