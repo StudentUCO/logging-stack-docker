@@ -146,9 +146,6 @@ services:
     labels:
       - "com.example.description=Promtail log collection agent"
       - "com.example.version=3.3.2"
-    
-    profiles:
-      - "promtail-optional"
 
 volumes:
   loki-data:
@@ -167,13 +164,5 @@ volumes:
 
 networks:
   logging-net:
-    driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: logging-net
-    ipam:
-      config:
-        - subnet: ${LOGGING_NETWORK_SUBNET:-172.25.0.0/16}
-
-labels:
-  - "com.example.project=logging-stack-docker"
-  - "com.example.environment=production"
+    external: true
+    name: proxy-shared-network
