@@ -96,7 +96,10 @@ services:
   # Can be scaled to multiple instances for distributed collection
   # NOTE: Promtail is in LTS mode until 2026. Consider migrating to Grafana Alloy for future deployments.
   promtail:
-    image: grafana/promtail:2.9.10 # Updated to match Loki version
+    # UPDATED to 3.0.0 to fix Docker API compatibility issue.
+    # Promtail 2.x uses an old Docker client (1.42) which is rejected by newer Docker daemons (requiring 1.44+).
+    # Promtail 3.x updates the Go client library.
+    image: grafana/promtail:3.0.0 
     container_name: promtail
     hostname: promtail
     
@@ -131,7 +134,7 @@ services:
     
     labels:
       - "com.example.description=Promtail log collection agent"
-      - "com.example.version=2.9.10"
+      - "com.example.version=3.0.0"
 
 volumes:
   loki-data:
